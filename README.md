@@ -5,9 +5,19 @@ Art direction: **"Nebula"** — near-black canvas, violet→cyan plasma, computa
 
 Built as a **static site** (no build step) so it's trivial to preview and later port to Next.js.
 
-```
-HTML · Tailwind (CDN) · vanilla JS · Motion (motion.dev) · GSAP + ScrollTrigger · Lenis · SplitType · Lucide
-```
+## Tech stack
+
+| Layer | Tool |
+|---|---|
+| Markup | HTML5 (single `index.html`, no build step) |
+| Styles | Hand-written CSS (`css/styles.css`) + **Tailwind CSS v3** via CDN |
+| Scripts | Vanilla ES module (`js/main.js`) |
+| Animations | **GSAP 3.13** + **ScrollTrigger** (CDN) |
+| Smooth scroll | **Lenis 1.3** (CDN) |
+| Text splitting | **Split-Type 0.3.4** (CDN) |
+| Icons | **Lucide 0.460** (CDN, UMD) |
+| Fonts | **Cerebri Sans** (local `/fonts/`) · **Space Mono** (Google Fonts) |
+| Dev server | `npx serve` on port 5181 |
 
 ## Run it
 
@@ -45,8 +55,7 @@ previews/         # the 4 art-direction concepts shown during selection
 | `--muted` / `--faint` | `#A9A9BC` / `#6E6E82` | secondary text |
 | `--violet` / `--glow` / `--cyan` | `#6D4DFF` / `#8B5CFF` / `#22D3EE` | accent ramp |
 | `--grad` | `linear-gradient(100deg,#8B5CFF,#22D3EE)` | signature gradient |
-| Display | **Space Grotesk** | headings (tight tracking) |
-| Body | **Inter** | copy |
+| Display / Body | **Cerebri Sans** | headings + copy |
 | Mono | **Space Mono** | eyebrows, labels, numerics |
 
 Tailwind utilities mirror these (`bg-bg`, `text-ink`, `text-muted`, `font-display`, `text-cyan2`, …) via the inline `tailwind.config` in `index.html`.

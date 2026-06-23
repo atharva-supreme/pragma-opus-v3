@@ -55,38 +55,28 @@ function smoothScroll() {
 /* ------------------------------------------------------------
    3 · CUSTOM CURSOR
 ------------------------------------------------------------ */
+/* The native pointer is visible; this just trails a single small dot behind it.
+   The dot inverts with the section theme (light on dark sections, dark over
+   .section-light) so it stays readable everywhere. */
 function cursor() {
   if (TOUCH || REDUCED) return;
-  const ring = $(".cursor");
   const dot = $(".cursor-dot");
-  const label = $(".cursor-label");
-  if (!ring || !dot) return;
+  if (!dot) return;
 
-  const xRing = gsap.quickTo(ring, "x", { duration: 0.5, ease: "power3" });
-  const yRing = gsap.quickTo(ring, "y", { duration: 0.5, ease: "power3" });
-  const xDot = gsap.quickTo(dot, "x", { duration: 0.12, ease: "power3" });
-  const yDot = gsap.quickTo(dot, "y", { duration: 0.12, ease: "power3" });
-  const xLab = gsap.quickTo(label, "x", { duration: 0.4, ease: "power3" });
-  const yLab = gsap.quickTo(label, "y", { duration: 0.4, ease: "power3" });
+  gsap.set(dot, { xPercent: -50, yPercent: -50 }); // center the dot on its point
+  const xDot = gsap.quickTo(dot, "x", { duration: 0.18, ease: "power3" });
+  const yDot = gsap.quickTo(dot, "y", { duration: 0.18, ease: "power3" });
 
+  let onLight = false;
   window.addEventListener("mousemove", (e) => {
-    xRing(e.clientX); yRing(e.clientY);
     xDot(e.clientX); yDot(e.clientY);
-    if (label) { xLab(e.clientX); yLab(e.clientY); }
+    // Flip colour when the pointer is over a light section.
+    const light = !!(e.target.closest && e.target.closest(".section-light"));
+    if (light !== onLight) { onLight = light; dot.classList.toggle("on-light", light); }
   });
 
-  // hover targets
-  $$("a, button, [data-cursor]").forEach((el) => {
-    const type = el.getAttribute("data-cursor");
-    el.addEventListener("mouseenter", () => {
-      document.body.classList.add(type === "link" ? "cur-link" : "cur-hover");
-      if (type === "link" && label) label.textContent = el.getAttribute("data-cursor-label") || "View";
-    });
-    el.addEventListener("mouseleave", () => document.body.classList.remove("cur-hover", "cur-link"));
-  });
-
-  document.addEventListener("mouseleave", () => gsap.to([ring, dot], { opacity: 0, duration: 0.3 }));
-  document.addEventListener("mouseenter", () => gsap.to([ring, dot], { opacity: 1, duration: 0.3 }));
+  document.addEventListener("mouseleave", () => gsap.to(dot, { opacity: 0, duration: 0.3 }));
+  document.addEventListener("mouseenter", () => gsap.to(dot, { opacity: 1, duration: 0.3 }));
 }
 
 /* ------------------------------------------------------------
@@ -382,37 +372,43 @@ function heroCanvas() {
 /* ------------------------------------------------------------
    8 · HERO INTRO + PARALLAX GLOWS
 ------------------------------------------------------------ */
+/* HERO ENTRANCE EXTRAS + PARALLAX
+   The reveal itself is CSS-driven (see styles.css "HERO + NAV ENTRANCE"), so the
+   hero appears in sync with the header the instant the page paints — it does NOT
+   wait for GSAP. Here we only add non-blocking flourishes that never gate the
+   content: metric count-ups, the pill "ONLINE" flare, and scroll parallax. */
 function heroIntro() {
   const hero = $("#hero");
-  if (!hero) return;
-  if (!REDUCED) {
-    const tl = gsap.timeline();
-    gsap.set("#hero-title", { opacity: 1 });
-    if (SplitType) {
-      // split by LINES (not chars) so gradient-clipped words survive
-      const split = new SplitType("#hero-title", { types: "lines", lineClass: "split-line" });
-      split.lines.forEach((l) => {
-        const w = document.createElement("span");
-        w.className = "line-mask"; w.style.display = "block";
-        l.parentNode.insertBefore(w, l); w.appendChild(l);
-      });
-      tl.from(split.lines, { yPercent: 118, duration: 1.15, ease: "expo.out", stagger: 0.09 });
-    } else {
-      tl.from("#hero-title", { y: 40, opacity: 0, duration: 1, ease: "expo.out" });
-    }
-    tl.fromTo("[data-hero-fade]", { y: 26, opacity: 0 }, { y: 0, opacity: 1, duration: 0.9, ease: "expo.out", stagger: 0.1 }, "-=0.6");
+  if (!hero || hero.dataset.introDone) return;
+  hero.dataset.introDone = "1";
 
-    // glow parallax
-    gsap.to(".hero-glow", {
-      yPercent: (i) => (i % 2 ? 24 : -24), ease: "none",
-      scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true },
-    });
-    // content drift on scroll
-    gsap.to("#hero-content", {
-      yPercent: 14, opacity: 0.4, ease: "none",
-      scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true },
-    });
-  }
+  const pill = $(".pbadge", hero);
+  const metrics = [
+    { el: $("#conf-val"), to: 98.7, dec: 1, suffix: "%" },
+    { el: $("#m-rps"), to: 24.8, dec: 1, suffix: "k" },
+    { el: $("#m-gain"), to: 34, dec: 0, prefix: "+", suffix: "%" },
+  ].filter((m) => m.el);
+  const writeMetric = (m, v) => { m.el.textContent = (m.prefix || "") + v.toFixed(m.dec) + (m.suffix || ""); };
+
+  if (REDUCED) { metrics.forEach((m) => writeMetric(m, m.to)); return; }
+
+  // Numbers tick up as the cards fade in. The cards are CSS-pre-hidden, so
+  // resetting to 0 here (before they're visible) never flashes the final value.
+  metrics.forEach((m) => {
+    const p = { v: 0 }; writeMetric(m, 0);
+    gsap.to(p, { v: m.to, duration: 0.9, delay: 0.35, ease: "power2.out", onUpdate: () => writeMetric(m, p.v) });
+  });
+
+  // Typewriter + pill "ONLINE" flare, timed to the copy/pill entrance.
+  gsap.delayedCall(0.35, startTypewriter);
+  if (pill) gsap.delayedCall(0.42, () => { pill.classList.add("online"); gsap.delayedCall(0.3, () => pill.classList.remove("online")); });
+
+  // Scroll parallax: content drifts + fades. (Orbs keep their own CSS drift.)
+  gsap.to("#hero-content", { yPercent: 14, opacity: 0.4, ease: "none",
+    scrollTrigger: { trigger: hero, start: "top top", end: "bottom top", scrub: true } });
+
+  // Cerebri Sans can swap after first paint and shift H1 metrics — recompute then.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ScrollTrigger && ScrollTrigger.refresh());
 }
 
 /* ------------------------------------------------------------
@@ -639,7 +635,9 @@ function startSite() {
   navDropdowns();
   nav();
   heroCanvas();
+  setupTypewriter();
   heroIntro();
+  heroMicro();
   velocityTracker();
   reveals();
   marquees();
@@ -658,8 +656,10 @@ function startSite() {
 
 /* if core libs failed to load, show everything statically */
 function failSafe() {
-  document.documentElement.classList.remove("js");
+  document.documentElement.classList.remove("js"); // drops every .js .pre-hide / .h-inner gate -> all visible
   if (window.lucide) window.lucide.createIcons();
+  setupTypewriter();   // still want the typewriter without GSAP
+  startTypewriter();
   const y = $("#year"); if (y) y.textContent = new Date().getFullYear();
 }
 
@@ -682,8 +682,12 @@ document.addEventListener("visibilitychange", () => {
 
 /* ------------------------------------------------------------
    HERO TYPEWRITER
+   Set up once; the hero boot timeline triggers startTypewriter() the moment the
+   sub-paragraph becomes visible, so the caret types on-screen instead of on a
+   blank line behind a fixed timer. A fallback timer covers the no-intro paths.
 ------------------------------------------------------------ */
-(function () {
+let _twStart = null, _twStarted = false;
+function setupTypewriter() {
   const tw = document.getElementById("tw");
   if (!tw) return;
   const phrases = [
@@ -693,6 +697,7 @@ document.addEventListener("visibilitychange", () => {
     "enterprise data platforms",
     "LLM-native products",
   ];
+  if (REDUCED) { tw.textContent = phrases[0]; return; }
   let pi = 0, ci = 0, deleting = false;
   function type() {
     const phrase = phrases[pi];
@@ -708,5 +713,24 @@ document.addEventListener("visibilitychange", () => {
       setTimeout(type, 38);
     }
   }
-  setTimeout(type, 1200);
-})();
+  _twStart = type;
+  setTimeout(startTypewriter, 2600); // fallback if the intro never fires the trigger
+}
+function startTypewriter() {
+  if (_twStarted || !_twStart) return;
+  _twStarted = true;
+  _twStart();
+}
+
+/* ------------------------------------------------------------
+   HERO MICRO-INTERACTIONS — avatar stack fans out on hover
+------------------------------------------------------------ */
+function heroMicro() {
+  if (TOUCH || REDUCED) return;
+  const group = $("[data-avatars]");
+  if (!group) return;
+  const avs = $$(":scope > div", group);
+  const xTo = avs.map((a) => gsap.quickTo(a, "x", { duration: 0.4, ease: "power3" }));
+  group.addEventListener("mouseenter", () => avs.forEach((a, i) => xTo[i](i * 7)));
+  group.addEventListener("mouseleave", () => avs.forEach((a, i) => xTo[i](0)));
+}

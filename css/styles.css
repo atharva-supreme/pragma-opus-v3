@@ -93,8 +93,9 @@ body {
   line-height: 1.55;
   overflow-x: hidden;
   position: relative;
-  cursor: none; /* replaced by custom cursor; restored on touch/reduced-motion */
 }
+/* Native pointer stays visible; a small dot (.cursor-dot) trails it for flair. */
+a, button, [data-cursor], .work-card, .btn { cursor: pointer; }
 
 /* Lenis */
 html.lenis, html.lenis body { height: auto; }
@@ -109,7 +110,7 @@ html.lenis, html.lenis body { height: auto; }
 ::-webkit-scrollbar-thumb:hover { background: #32323f; }
 
 a { color: inherit; text-decoration: none; }
-button { font: inherit; color: inherit; background: none; border: none; cursor: none; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 img, svg, canvas { display: block; max-width: 100%; }
 
 /* ---------- LAYOUT ---------- */
@@ -165,37 +166,18 @@ section { position: relative; }
 .text-faint { color: var(--faint); }
 
 /* ---------- CUSTOM CURSOR ---------- */
-.cursor, .cursor-dot {
-  position: fixed; top: 0; left: 0;
-  pointer-events: none; z-index: 9999;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  will-change: transform;
-}
-.cursor {
-  width: 34px; height: 34px;
-  border: 1px solid rgba(236, 236, 242, 0.45);
-  transition: width .35s var(--e-out), height .35s var(--e-out),
-              background-color .35s var(--e-out), border-color .35s var(--e-out), opacity .3s;
-  mix-blend-mode: difference;
-}
+/* A single small dot trails the (now-visible) native pointer. It inverts with
+   the section theme: light on the dark sections, dark over .section-light.
+   GSAP owns the transform (x/y + xPercent/yPercent centering). */
 .cursor-dot {
-  width: 5px; height: 5px;
-  background: var(--ink);
+  position: fixed; top: 0; left: 0;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(236, 236, 242, 0.92);   /* light dot — for dark sections */
+  pointer-events: none; z-index: 9999;
+  will-change: transform;
+  transition: background-color .3s var(--e-out), opacity .3s;
 }
-/* states (toggled via body classes) */
-body.cur-hover .cursor { width: 64px; height: 64px; background: rgba(236, 236, 242, 0.1); border-color: transparent; }
-body.cur-hover .cursor-dot { opacity: 0; }
-body.cur-link .cursor { width: 78px; height: 78px; background: var(--grad); border-color: transparent; mix-blend-mode: normal; }
-body.cur-link .cursor-dot { opacity: 0; }
-.cursor-label {
-  position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.6);
-  font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: .08em;
-  text-transform: uppercase; color: #07070b; opacity: 0;
-  transition: opacity .3s, transform .3s var(--e-spring);
-}
-body.cur-link .cursor-label { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.cursor-dot.on-light { background: rgba(18, 17, 26, 0.9); }  /* dark dot — over .section-light */
 
 /* ---------- GRAIN + VIGNETTE ---------- */
 .grain {
@@ -353,7 +335,7 @@ body.tab-hidden .grain { animation-play-state: paused; }
 .row-2 { grid-row: span 2; }
 
 /* ---------- WORK CARDS ---------- */
-.work-card { position: relative; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); cursor: none; }
+.work-card { position: relative; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); cursor: pointer; }
 .work-visual { position: relative; aspect-ratio: 16 / 10.5; overflow: hidden; background: #0a0a12; }
 /* the parallaxed UI layer overfills vertically so the ±12% drift never reveals an edge */
 .work-visual .layer { position: absolute; top: -14%; left: 0; right: 0; height: 128%; z-index: 2; will-change: transform; display: flex; align-items: center; justify-content: center; padding: 0 8%; }
@@ -414,6 +396,62 @@ body.tab-hidden .grain { animation-play-state: paused; }
   box-shadow: 0 32px 60px -26px rgba(24, 20, 48, 0.45), 0 0 0 1px rgba(139, 92, 255, 0.14);
 }
 
+/* ---------- PREMIUM BENTO CARDS (01 / Capabilities) ---------- */
+/* Card-scoped "premium" hover, ported from the reference S-Tier winner card to
+   the Nebula violet→cyan palette. Three layers, all confined to each card:
+     1 · a cursor-following spotlight (::before)
+     2 · an always-on violet→cyan gradient ring that brightens on hover (::after)
+     3 · an ambient violet glow on hover
+   Self-contained: the modifier supplies its own ring, so no .hairline-grad is
+   needed on the card. Reuses the [data-tilt] handler's --mx/--my — no JS change.
+   Rules sit after the base .bento-card rules so they win on source order. */
+
+/* spotlight radius scales with card footprint, so the big (row-2) card and the
+   small (col-2) cards both read as a tracking spotlight, not a flat wash */
+.bento-card-premium { --spot: 600px; }
+.bento-card-premium.col-2 { --spot: 340px; }
+
+/* 1 · brand-tinted spotlight that tracks the cursor (bright core + soft falloff) */
+.bento-card-premium::before {
+  background: radial-gradient(var(--spot) circle at var(--mx, 50%) var(--my, 50%),
+    rgba(139, 92, 255, 0.34) 0%,
+    rgba(139, 92, 255, 0.12) 35%,
+    transparent 68%);
+}
+
+/* 2 · vivid violet→cyan ring (mirrors the reference's gold→purple→teal),
+       clearly present at rest, full strength + a gentle shift on hover */
+.bento-card-premium::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(139, 92, 255, 0.85) 0%,
+    rgba(109, 77, 255, 0.45) 50%,
+    rgba(34, 211, 238, 0.55) 100%);
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  opacity: 0.85;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none;
+  transition: opacity .5s var(--e-out), background-position .8s var(--e-out);
+}
+.bento-card-premium:hover::after {
+  opacity: 1;
+  background-position: 100% 50%;
+}
+
+/* 3 · ambient violet glow on hover — positive spread so the halo actually
+       blooms outward, plus an inset top highlight for the glassy edge.
+       Overrides the shared bento lift shadow. */
+.bento-card-premium[data-tilt]:hover {
+  border-color: transparent;
+  box-shadow:
+    0 28px 80px -16px rgba(7, 7, 11, 0.9),
+    0 0 64px 2px rgba(139, 92, 255, 0.45),
+    0 0 0 1px rgba(139, 92, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
 /* ---------- PROCESS ---------- */
 .process-step { border-top: 1px solid var(--line); transition: background-color .5s; }
 .process-num { font-family: "Cerebri Sans", sans-serif; }
@@ -447,7 +485,7 @@ body.tab-hidden .grain { animation-play-state: paused; }
 .nav-link-btn {
   display: inline-flex; align-items: center; gap: 5px;
   background: none; border: none; padding: 6px 0;
-  font-size: 14px; font-weight: 400; cursor: none;
+  font-size: 14px; font-weight: 400; cursor: pointer;
 }
 .nav-drop-root.open .nav-link-btn { color: var(--ink); }
 .nav-drop-root.open .nav-link-btn::after { transform: scaleX(1); transform-origin: left; }
@@ -591,6 +629,15 @@ body.tab-hidden .grain { animation-play-state: paused; }
 .nav-backdrop.visible { opacity: 1; pointer-events: all; }
 
 /* ---------- HERO ---------- */
+/* Atmospheric base: lift the top out of dead-flat black with a faint violet
+   halo + a vertical fade back to the page black by mid-section, so the section
+   reads as lit (and copy stays anchored) instead of a void. Sits behind the
+   orbs/grid; fades to --bg so the next section joins seamlessly. */
+#hero {
+  background:
+    radial-gradient(100% 72% at 50% -8%, rgba(109, 77, 255, 0.10), transparent 58%),
+    linear-gradient(180deg, #100f1c 0%, #0b0b13 38%, var(--bg) 72%);
+}
 #hero-canvas { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; }
 .hero-glow {
   position: absolute; z-index: 0; border-radius: 50%; filter: blur(56px); pointer-events: none;
@@ -659,17 +706,17 @@ body.tab-hidden .grain { animation-play-state: paused; }
 
 /* ---------- TOUCH / NO-CURSOR ---------- */
 @media (hover: none), (pointer: coarse) {
-  body { cursor: auto; }
-  .cursor, .cursor-dot, .cursor-label { display: none !important; }
+  .cursor-dot { display: none !important; }
   button, a, .work-card { cursor: pointer; }
 }
 
 /* ---------- REDUCED MOTION ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
-  body { cursor: auto; }
-  .cursor, .cursor-dot, .cursor-label, .grain { display: none !important; }
-  .js [data-reveal], .js .pre-hide { opacity: 1 !important; transform: none !important; }
+  .cursor-dot, .grain { display: none !important; }
+  .js [data-reveal], .js .pre-hide,
+  .js .h-inner, .js .nav .shell { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .conf-bar { width: 98.7% !important; animation: none !important; }
 }
 
 /* ---------- FOCUS ---------- */
@@ -740,9 +787,11 @@ body.tab-hidden .grain { animation-play-state: paused; }
 }
 
 /* ── HERO VIGNETTE (scoped to hero, not site-wide) ── */
+/* Lighter + starts later so the edges aren't crushed to pure black and the
+   atmospheric gradient above survives in the corners. */
 .hero-vignette {
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at center, transparent 42%, rgba(5,5,10,.72) 100%);
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(5,5,10,.45) 100%);
 }
 
 /* ── TEXT GRADIENTS ── */
@@ -802,14 +851,14 @@ body.tab-hidden .grain { animation-play-state: paused; }
 .think-dot:nth-child(3) { animation-delay: .44s; opacity: .45; }
 @keyframes td { 0%,80%,100% { transform: scale(1); } 40% { transform: scale(1.6); } }
 
-/* ── CONFIDENCE BAR ── */
+/* ── CONFIDENCE BAR ── (fills via CSS, in step with the card entrance) */
 .conf-bar {
   height: 100%; border-radius: 4px;
   background: linear-gradient(90deg, #6366F1, #a78bfa);
   width: 0;
-  animation: cb 2.2s ease-out 1.2s forwards;
+  animation: cb 1.1s var(--e-out) .5s both;
 }
-@keyframes cb { to { width: 98%; } }
+@keyframes cb { to { width: 98.7%; } }
 
 /* ── TYPEWRITER ── */
 #tw { color: #F59E0B; font-style: italic; }
@@ -834,40 +883,135 @@ body.tab-hidden .grain { animation-play-state: paused; }
 }
 @keyframes pg { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(1.5); } }
 
-/* ── HERO BUTTONS ── */
-.btn-p {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 12px 26px;
-  background: linear-gradient(135deg, #6366F1 0%, #7B68EE 60%, #8B5CF6 100%);
-  color: #fff;
-  font-family: 'DM Sans', 'Inter', sans-serif;
-  font-weight: 500; font-size: 14.5px;
-  border-radius: 10px;
-  border: none; cursor: pointer;
-  position: relative; overflow: hidden;
-  transition: transform .25s, box-shadow .25s;
-  text-decoration: none;
-}
-.btn-p::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,.18) 0%, transparent 60%);
-  opacity: 0; transition: opacity .3s;
-}
-.btn-p:hover::before { opacity: 1; }
-.btn-p:hover { transform: translateY(-2px); box-shadow: 0 0 28px rgba(99,102,241,.55), 0 8px 20px rgba(0,0,0,.3); }
-.btn-p:active { transform: translateY(0); }
 
-.btn-g {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 11px 24px;
-  background: transparent;
-  color: rgba(241,241,246,.8);
-  font-family: 'DM Sans', 'Inter', sans-serif;
-  font-weight: 500; font-size: 14.5px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.14);
-  cursor: pointer; text-decoration: none;
-  transition: all .25s;
+/* ============================================================
+   ROTATING HERO TEXT — paint-fall liquid fill
+   Ported from pragma-gsap RotatingWord (inline variant)
+   ============================================================ */
+@property --rot-fill {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
 }
-.btn-g:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.28); color: #fff; transform: translateY(-1px); }
+
+/* Mask window — overflow:hidden is the key: clips sliding words */
+.rot-inline {
+  display: inline-block;
+  position: relative;
+  overflow: hidden;
+  line-height: 1;
+  vertical-align: -0.155em; /* corrects baseline lift from overflow:hidden on inline-block */
+}
+
+/* Invisible spacer holds the wrapper width to the longest word */
+.rot-sizer {
+  display: inline-block;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+/* Each rotating word — stacked absolutely over the sizer */
+.rot-word {
+  display: inline-block;
+  position: absolute;
+  inset: 0 auto 0 0;
+  white-space: nowrap;
+  line-height: 1;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-image: linear-gradient(
+    0deg,
+    var(--industry-color) var(--rot-fill),
+    currentColor          var(--rot-fill)
+  );
+  animation:
+    rot-word-swap var(--rot-dur, 9s) infinite cubic-bezier(0.76, 0.001, 0, 0.995),
+    rot-word-fill var(--rot-dur, 9s) infinite cubic-bezier(0.66, 0.19, 1, 1);
+}
+
+/* Slide: enter from below → hold → exit above */
+@keyframes rot-word-swap {
+  0%            { transform: translateY(100%); }
+  5.33%, 31.66% { transform: translateY(0%); }
+  38%, 100%     { transform: translateY(-100%); }
+}
+
+/* Liquid fill: floods colour up the glyphs while the word is visible */
+@keyframes rot-word-fill {
+  0%, 3%, 100% { --rot-fill: 0%; }
+  35%, 38%     { --rot-fill: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rot-word { animation: none; --rot-fill: 100%; }
+}
+
+/* ============================================================
+   HERO "BOOT SEQUENCE" — on-reload entrance choreography
+   (designed via the hero-reload-choreography workflow)
+   ============================================================ */
+
+/* ── H1 manual line masks (NOT SplitType — keeps the rotating word intact) ──
+   .h-line clips; the CSS entrance below slides .h-inner up out of it. The
+   padding/negative-margin gives the descenders + the rotating word's -0.155em
+   baseline room so overflow:hidden never crops the glyphs or fill at rest. */
+.h-line  { display: block; overflow: hidden; padding: 0.06em 0 0.22em; margin: -0.06em 0 -0.22em; }
+.h-inner { display: block; }
+.js .h-inner { transform: translateY(130%); } /* pre-slid below the mask -> no flash on load */
+
+/* ── Right-column card wrappers — the transform-conflict fix ──
+   GSAP animates the WRAPPER (.f-wrap); the inner .f1–.f4 keep their CSS `fy`
+   float loop on a separate node, so the two never fight over `transform`. */
+.f1, .f2, .f3, .f4 { position: static; }     /* placement now lives on .f-wrap */
+.f-wrap.animating  { will-change: transform, opacity; }
+
+/* Move the pre-existing .glass-h hover LIFT off the floated card (where it
+   fought the fy loop) onto the wrapper, leaving the glow/border on the card. */
+.glass-h:hover { transform: none; }
+.f-wrap:has(.glass-h:hover) { transform: translateY(-3px); transition: transform .3s var(--e-out); }
+@supports not (selector(:has(*))) {           /* legacy fallback */
+  .glass-h:hover { transform: translateY(-3px); animation-play-state: paused; }
+}
+
+/* ── Status pill "connect ONLINE" flare (toggled ~260ms by JS) ── */
+.pbadge { transition: box-shadow .26s ease-out; }
+.pbadge.online { box-shadow: 0 0 18px 3px rgba(16,185,129,.45); }
+.pbadge.online::before { background: #34ffa0; box-shadow: 0 0 10px 2px rgba(16,185,129,.7); }
+
+/* Count-ups: fixed-width digits so the ticking number never reflows its tile. */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   HERO + NAV ENTRANCE — CSS-driven, fires at FIRST PAINT
+   Gated on html.js (set synchronously in <head>), so the hero reveals in
+   sync with the header the instant the page paints — it does NOT wait for the
+   deferred GSAP CDN or the JS module to execute (that was the "pause"). Quick,
+   staggered micro-animations; the whole sequence lands in ~1.1s. GSAP is left
+   to drive only non-blocking extras (count-ups, parallax, hover, pill flare).
+   ============================================================ */
+@keyframes intro-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes intro-line { from { transform: translateY(130%); } to { transform: translateY(0); } }
+
+/* Default reveal for tagged hero copy (pill, paragraphs, CTAs, social row). */
+.js .pre-hide { animation: intro-rise .62s var(--e-out) both; animation-delay: var(--enter-d, 0s); }
+/* Cards + scroll cue fade only — never lock the transform their hover-lift /
+   translate-centering depend on. */
+.js .f-wrap.pre-hide,
+.js [data-hero-fade-late].pre-hide { animation-name: intro-fade; }
+/* Headline lines rise up out of their masks. */
+.js .h-inner { animation: intro-line .7s var(--e-out) both; animation-delay: var(--enter-d, 0s); }
+/* Nav: slide the inner shell down in sync (NOT .nav itself, whose transform is
+   owned by the scroll hide/show). */
+.js .nav .shell { animation: intro-rise .6s var(--e-out) both; animation-delay: .02s; }
+
+/* Stagger — fast and overlapping. */
+.js .pbadge.pre-hide { animation-delay: .06s; }
+.js #hero-title .h-line:nth-child(1) .h-inner { animation-delay: .12s; }
+.js #hero-title .h-line:nth-child(2) .h-inner { animation-delay: .19s; }
+.js #hero-title .h-line:nth-child(3) .h-inner { animation-delay: .26s; }
+.js .fw1.pre-hide { animation-delay: .18s; }
+.js .fw2.pre-hide { animation-delay: .26s; }
+.js .fw3.pre-hide { animation-delay: .32s; }
+.js .fw4.pre-hide { animation-delay: .38s; }

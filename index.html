@@ -11,10 +11,23 @@
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b5cff'/%3E%3Cstop offset='1' stop-color='%2322d3ee'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='%2307070b'/%3E%3Cpath d='M10 24V8h7a5 5 0 0 1 0 10h-7' fill='none' stroke='url(%23g)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 
+  <!-- FOUC gate: set html.js synchronously (before paint) so .js .pre-hide and
+       .js .h-inner pre-states apply on frame 0 — the hero entrance runs from a
+       hidden start with no flash/jump. main.js re-adds .js as an idempotent backup. -->
+  <script>
+    (function () {
+      var h = document.documentElement;
+      h.classList.add('js');
+      try {
+        if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) h.classList.add('reduced');
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  
+
   <!-- Tailwind (CDN) + Nebula config -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -54,9 +67,7 @@
   <!-- Overlays -->
   <div class="grain" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
-  <div class="cursor" aria-hidden="true"></div>
   <div class="cursor-dot" aria-hidden="true"></div>
-  <div class="cursor-label" aria-hidden="true"></div>
 
   <!-- ============ NAV ============ -->
   <header class="nav">
@@ -213,44 +224,44 @@
       </div>
 
       <div class="relative z-10 max-w-[1300px] mx-auto w-full">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div id="hero-content" class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
           <!-- LEFT: Copy -->
           <div class="max-w-[560px]">
 
             <!-- Status pill -->
-            <div class="s-label pbadge mb-8 cursor-default">
+            <div class="s-label pbadge mb-8 cursor-default pre-hide">
               Now accepting projects for Q3 2025
             </div>
 
-            <!-- H1 -->
-            <h1 class="font-display font-extrabold leading-[1.07] tracking-tight mb-6"
+            <!-- H1 — manual line masks (.h-line clips, GSAP slides .h-inner). The
+                 rotating liquid word stays a self-contained CSS animation, untouched. -->
+            <h1 id="hero-title" class="font-display font-extrabold leading-[1.07] tracking-tight mb-6"
                 style="font-size: clamp(2.75rem, 5.5vw, 4.75rem);">
-              We build<br/>
-              software that<br/>
-              <span class="text-grad">thinks.</span>
+              <span class="h-line"><span class="h-inner">We build</span></span>
+              <span class="h-line"><span class="h-inner">software that</span></span>
+              <span class="h-line"><span class="h-inner"><span class="rot-inline" style="--rot-dur:9s" aria-label="thinks."><span class="rot-sizer" aria-hidden="true">thinks.</span><span class="rot-word" style="--industry-color:#8B5CFF;animation-delay:-9s" aria-hidden="true">thinks.</span><span class="rot-word" style="--industry-color:#22D3EE;animation-delay:-6s" aria-hidden="true">ships.</span><span class="rot-word" style="--industry-color:#34ff48;animation-delay:-3s" aria-hidden="true">scales.</span></span></span></span>
             </h1>
 
             <!-- Sub -->
-            <p class="text-[17px] leading-[1.8] text-white/62 mb-3 max-w-[490px]">
+            <p class="text-[17px] leading-[1.8] text-white/62 mb-3 max-w-[490px] pre-hide" data-hero-fade style="--enter-d:.30s">
               Pragma engineers <span id="tw">AI-powered analytics</span><span class="tcur" aria-hidden="true"></span> — production-ready systems for companies operating at the frontier.
             </p>
-            <p class="text-[14.5px] text-white/35 mb-10 max-w-[440px]">
+            <p class="text-[14.5px] text-white/55 mb-10 max-w-[440px] pre-hide" data-hero-fade style="--enter-d:.36s">
               From data pipelines to intelligent products. Zero compromise on quality.
             </p>
 
             <!-- CTAs -->
-            <div class="flex flex-wrap gap-4 mb-12">
-              <a href="#contact" class="btn-p cursor-pointer">
-                Start a Project
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><path d="M1 7.5h13M8 2l5.5 5.5L8 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="flex flex-wrap gap-4 mb-12 pre-hide" data-hero-fade style="--enter-d:.42s">
+              <a href="#contact" class="btn btn-primary" data-cursor="hover">
+                Start a Project <span class="btn-ico" aria-hidden="true">→</span>
               </a>
-              <a href="#work" class="btn-g cursor-pointer">View Our Work</a>
+              <a href="#work" class="btn btn-ghost" data-cursor="hover">View Our Work</a>
             </div>
 
             <!-- Social proof -->
-            <div class="flex items-center gap-5 flex-wrap">
-              <div class="flex -space-x-2" aria-label="Client avatars">
+            <div class="flex items-center gap-5 flex-wrap pre-hide" data-hero-fade style="--enter-d:.48s">
+              <div class="flex -space-x-2" data-avatars aria-label="Client avatars">
                 <div class="w-8 h-8 rounded-full border-2 border-[#05050A] bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center text-[10px] font-bold" aria-hidden="true">A</div>
                 <div class="w-8 h-8 rounded-full border-2 border-[#05050A] bg-gradient-to-br from-amber-500 to-rose-500  flex items-center justify-center text-[10px] font-bold" aria-hidden="true">B</div>
                 <div class="w-8 h-8 rounded-full border-2 border-[#05050A] bg-gradient-to-br from-emerald-500 to-cyan-500  flex items-center justify-center text-[10px] font-bold" aria-hidden="true">C</div>
@@ -265,16 +276,17 @@
                   <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                   <span class="text-[12px] font-semibold text-white/75 ml-1.5">4.9 / 5</span>
                 </div>
-                <span class="text-[11px] text-white/32">Trusted by 80+ engineering teams</span>
+                <span class="text-[11px] text-white/45">Trusted by 80+ engineering teams</span>
               </div>
             </div>
           </div>
 
           <!-- RIGHT: Floating AI Visual -->
-          <div class="hidden lg:block relative h-[530px]" aria-hidden="true">
+          <div class="hero-cards hidden lg:block relative h-[530px]" aria-hidden="true">
 
             <!-- Main reasoning card -->
-            <div class="glass rounded-2xl p-6 absolute top-10 left-0 right-20 f1">
+            <div class="f-wrap fw1 pre-hide absolute top-10 left-0 right-20">
+            <div class="glass rounded-2xl p-6 f1">
               <div class="flex items-center gap-3 mb-5">
                 <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(108,99,255,.18)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
@@ -314,26 +326,30 @@
               <div class="mt-6">
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-[11px] text-white/38">Model Confidence</span>
-                  <span class="text-[11px] font-semibold text-violet-300">98.7%</span>
+                  <span id="conf-val" class="text-[11px] font-semibold text-violet-300 tabular-nums">98.7%</span>
                 </div>
                 <div class="h-1.5 rounded-full overflow-hidden" style="background:rgba(255,255,255,.08)">
                   <div class="conf-bar"></div>
                 </div>
               </div>
             </div>
+            </div>
 
             <!-- Top-right metric -->
-            <div class="glass glass-h rounded-xl p-4 absolute top-2 right-0 w-[148px] f2 cursor-default">
+            <div class="f-wrap fw2 pre-hide absolute top-2 right-0 w-[148px]">
+            <div class="glass glass-h rounded-xl p-4 f2 cursor-default">
               <div class="text-[10px] text-white/32 mb-1 font-medium uppercase tracking-wider">Requests/sec</div>
-              <div class="font-display text-[26px] font-bold text-grad leading-none">24.8k</div>
+              <div id="m-rps" class="font-display text-[26px] font-bold text-grad leading-none tabular-nums">24.8k</div>
               <div class="flex items-center gap-1.5 mt-2">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 7L3.5 4L6 6L9 2" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span class="text-[10px] text-emerald-400 font-semibold">+12.4%</span>
               </div>
             </div>
+            </div>
 
             <!-- Bottom-left status -->
-            <div class="glass glass-h rounded-xl p-4 absolute bottom-24 left-0 w-[210px] f3 cursor-default">
+            <div class="f-wrap fw3 pre-hide absolute bottom-24 left-0 w-[210px]">
+            <div class="glass glass-h rounded-xl p-4 f3 cursor-default">
               <div class="flex items-center gap-2 mb-2.5">
                 <div class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(16,185,129,.2)">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 5L4.5 7.5L8 3" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -343,12 +359,15 @@
               <div class="text-[12px] text-white/68 leading-snug">Revenue forecast model deployed to production</div>
               <div class="text-[10px] text-white/28 mt-2">2 minutes ago</div>
             </div>
+            </div>
 
             <!-- Bottom-right gain -->
-            <div class="glass glass-h rounded-xl p-4 absolute bottom-6 right-8 f4 cursor-default">
+            <div class="f-wrap fw4 pre-hide absolute bottom-6 right-8">
+            <div class="glass glass-h rounded-xl p-4 f4 cursor-default">
               <div class="text-[10px] text-white/32 mb-1 uppercase tracking-wider">Efficiency Gain</div>
-              <div class="font-display text-[24px] font-bold text-grad-amber leading-none">+34%</div>
+              <div id="m-gain" class="font-display text-[24px] font-bold text-grad-amber leading-none tabular-nums">+34%</div>
               <div class="text-[10px] text-white/28 mt-1.5">vs. baseline</div>
+            </div>
             </div>
 
             <!-- Decorative glow dots -->
@@ -361,7 +380,7 @@
       </div>
 
       <!-- Scroll indicator -->
-      <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" aria-hidden="true">
+      <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pre-hide" data-hero-fade-late style="--enter-d:.55s" aria-hidden="true">
         <span class="text-[10px] uppercase tracking-widest text-white/28">Scroll</span>
         <div class="w-px h-10 animate-pulse" style="background:linear-gradient(to bottom, rgba(255,255,255,.25), transparent)"></div>
       </div>
@@ -415,7 +434,7 @@
 
         <div class="bento" data-reveal-group>
           <!-- 1 large -->
-          <article class="bento-card col-4 row-2 flex flex-col justify-between min-h-[340px] hairline-grad" data-reveal-item data-cursor="hover" data-tilt>
+          <article class="bento-card bento-card-premium col-4 row-2 flex flex-col justify-between min-h-[340px]" data-reveal-item data-cursor="hover" data-tilt>
             <div class="bento-icon"><i data-lucide="brain-circuit"></i></div>
             <div>
               <h3 class="font-display text-3xl md:text-4xl mb-3">Applied AI</h3>
@@ -426,27 +445,27 @@
             </div>
           </article>
 
-          <article class="bento-card col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
+          <article class="bento-card bento-card-premium col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
             <div class="bento-icon"><i data-lucide="bot"></i></div>
             <div><h3 class="font-display text-2xl mb-1.5">Agentic Systems</h3><p class="text-muted text-sm">Agents that reason, act, and self-correct across your real tools.</p></div>
           </article>
 
-          <article class="bento-card col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
+          <article class="bento-card bento-card-premium col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
             <div class="bento-icon"><i data-lucide="boxes"></i></div>
             <div><h3 class="font-display text-2xl mb-1.5">Product Engineering</h3><p class="text-muted text-sm">Full-stack builds that ship fast and hold up under real load.</p></div>
           </article>
 
-          <article class="bento-card col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
+          <article class="bento-card bento-card-premium col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
             <div class="bento-icon"><i data-lucide="layout-panel-left"></i></div>
             <div><h3 class="font-display text-2xl mb-1.5">Interfaces</h3><p class="text-muted text-sm">Motion-led front ends where every interaction feels deliberate.</p></div>
           </article>
 
-          <article class="bento-card col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
+          <article class="bento-card bento-card-premium col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
             <div class="bento-icon"><i data-lucide="database"></i></div>
             <div><h3 class="font-display text-2xl mb-1.5">Data & Infra</h3><p class="text-muted text-sm">Pipelines, retrieval and evals that make intelligence reliable.</p></div>
           </article>
 
-          <article class="bento-card col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
+          <article class="bento-card bento-card-premium col-2 min-h-[160px] flex flex-col justify-between" data-reveal-item data-cursor="hover" data-tilt>
             <div class="bento-icon"><i data-lucide="compass"></i></div>
             <div><h3 class="font-display text-2xl mb-1.5">Strategy & Design</h3><p class="text-muted text-sm">We pressure-test the idea, then design the product worth building.</p></div>
           </article>
